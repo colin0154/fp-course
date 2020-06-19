@@ -95,7 +95,7 @@ instance Monad ((->) t) where
 -- >>> ((*) <**> (+2)) 3
 -- 15
 (<**>) :: Monad k => k (a -> b) -> k a -> k b
-(<**>) = 
+(<**>) = (<*>)
   -- error "todo: Course.Monad#(<**>)"
 
 infixl 4 <**>
@@ -113,12 +113,9 @@ infixl 4 <**>
 --
 -- >>> join (+) 7
 -- 14
-join ::
-  Monad k =>
-  k (k a)
-  -> k a
-join =
-  error "todo: Course.Monad#join"
+join :: Monad k => k (k a) -> k a
+join = (=<<) id
+  -- error "todo: Course.Monad#join"
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
@@ -126,13 +123,9 @@ join =
 --
 -- >>> ((+10) >>= (*)) 7
 -- 119
-(>>=) ::
-  Monad k =>
-  k a
-  -> (a -> k b)
-  -> k b
-(>>=) =
-  error "todo: Course.Monad#(>>=)"
+(>>=) :: Monad k => k a -> (a -> k b) -> k b
+m >>= f = join (f <$> m)
+  -- error "todo: Course.Monad#(>>=)"
 
 infixl 1 >>=
 
@@ -141,14 +134,9 @@ infixl 1 >>=
 --
 -- >>> ((\n -> n :. n :. Nil) <=< (\n -> n+1 :. n+2 :. Nil)) 1
 -- [2,2,3,3]
-(<=<) ::
-  Monad k =>
-  (b -> k c)
-  -> (a -> k b)
-  -> a
-  -> k c
-(<=<) =
-  error "todo: Course.Monad#(<=<)"
+(<=<) :: Monad k => (b -> k c) -> (a -> k b) -> a -> k c
+(<=<) f g a = (g a) >>= f
+  -- error "todo: Course.Monad#(<=<)"
 
 infixr 1 <=<
 

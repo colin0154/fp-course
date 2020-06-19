@@ -23,24 +23,17 @@ import qualified Prelude as P
 -- >>> instance Arbitrary a => Arbitrary (List a) where arbitrary = P.fmap listh arbitrary
 
 -- | A `StateT` is a function from a state value `s` to a functor k of (a produced value `a`, and a resulting state `s`).
-newtype StateT s k a =
-  StateT {
-    runStateT ::
-      s
-      -> k (a, s)
-  }
+newtype StateT s k a = StateT { runStateT :: s -> k (a, s) }
 
 -- | Implement the `Functor` instance for @StateT s k@ given a @Functor k@.
 --
 -- >>> runStateT ((+1) <$> (pure 2) :: StateT Int List Int) 0
 -- [(3,0)]
 instance Functor k => Functor (StateT s k) where
-  (<$>) ::
-    (a -> b)
-    -> StateT s k a
-    -> StateT s k b
-  (<$>) =
-    error "todo: Course.StateT (<$>)#instance (StateT s k)"
+  (<$>) :: (a -> b) -> StateT s k a -> StateT s k b
+  (<$>) g st = StateT (\s -> app <$> runStateT st s)
+                      where app = \(v, s') -> (g v, s')
+    -- error "todo: Course.StateT (<$>)#instance (StateT s k)"
 
 -- | Implement the `Applicative` instance for @StateT s k@ given a @Monad k@.
 --
@@ -59,17 +52,14 @@ instance Functor k => Functor (StateT s k) where
 -- >>> runStateT (StateT (\s -> ((+2), s ++ (1:.Nil)) :. ((+3), s ++ (1:.Nil)) :. Nil) <*> (StateT (\s -> (2, s ++ (2:.Nil)) :. Nil))) (0:.Nil)
 -- [(4,[0,1,2]),(5,[0,1,2])]
 instance Monad k => Applicative (StateT s k) where
-  pure ::
-    a
-    -> StateT s k a
-  pure =
-    error "todo: Course.StateT pure#instance (StateT s k)"
-  (<*>) ::
-    StateT s k (a -> b)
-    -> StateT s k a
-    -> StateT s k b
-  (<*>) =
-    error "todo: Course.StateT (<*>)#instance (StateT s k)"
+  pure :: a -> StateT s k a
+  pure v = StateT (\s -> pure (v, s))
+    -- error "todo: Course.StateT pure#instance (StateT s k)"
+  (<*>) :: StateT s k (a -> b) -> StateT s k a -> StateT s k b
+  (<*>) stf stx = StateT (\s -> runStateT stf s >>= \(f, s') ->
+                                runStateT stx s' >>= \(x, s'')->
+                                pure ((f x), s''))
+    -- error "todo: Course.StateT (<*>)#instance (StateT s k)"
 
 -- | Implement the `Monad` instance for @StateT s k@ given a @Monad k@.
 -- Make sure the state value is passed through in `bind`.
