@@ -53,7 +53,7 @@ get = State (\s -> (s, s))
 -- >>> runState (put 1) 0
 -- ((),1)
 put :: s -> State s ()
-put v = State (\_ -> ((), v))
+put s = State (\_ -> ((), s))
   -- error "todo: Course.State#put"
 
 -- | Implement the `Functor` instance for `State s`.
