@@ -239,21 +239,17 @@ instance Monad k => Monad (OptionalT k) where
     -- error "todo: Course.StateT (=<<)#instance (OptionalT k)"
 
 -- | A `Logger` is a pair of a list of log values (`[l]`) and an arbitrary value (`a`).
-data Logger l a =
-  Logger (List l) a
-  deriving (Eq, Show)
+data Logger l a = Logger (List l) a
+                  deriving (Eq, Show)
 
 -- | Implement the `Functor` instance for `Logger
 --
 -- >>> (+3) <$> Logger (listh [1,2]) 3
 -- Logger [1,2] 6
 instance Functor (Logger l) where
-  (<$>) ::
-    (a -> b)
-    -> Logger l a
-    -> Logger l b
-  (<$>) =
-    error "todo: Course.StateT (<$>)#instance (Logger l)"
+  (<$>) :: (a -> b) -> Logger l a -> Logger l b
+  (<$>) f (Logger xs y) = Logger xs (f y)
+    -- error "todo: Course.StateT (<$>)#instance (Logger l)"
 
 -- | Implement the `Applicative` instance for `Logger`.
 --
@@ -263,18 +259,13 @@ instance Functor (Logger l) where
 -- >>> Logger (listh [1,2]) (+7) <*> Logger (listh [3,4]) 3
 -- Logger [1,2,3,4] 10
 instance Applicative (Logger l) where
-  pure ::
-    a
-    -> Logger l a
-  pure =
-    error "todo: Course.StateT pure#instance (Logger l)"
+  pure :: a -> Logger l a
+  pure x = Logger Nil x
+    -- error "todo: Course.StateT pure#instance (Logger l)"
 
-  (<*>) ::
-    Logger l (a -> b)
-    -> Logger l a
-    -> Logger l b
-  (<*>) =
-    error "todo: Course.StateT (<*>)#instance (Logger l)"
+  (<*>) :: Logger l (a -> b) -> Logger l a -> Logger l b
+  Logger a x <*> Logger b y = Logger (a++b) (x y)
+    -- error "todo: Course.StateT (<*>)#instance (Logger l)"
 
 -- | Implement the `Monad` instance for `Logger`.
 -- The `bind` implementation must append log values to maintain associativity.
@@ -282,23 +273,17 @@ instance Applicative (Logger l) where
 -- >>> (\a -> Logger (listh [4,5]) (a+3)) =<< Logger (listh [1,2]) 3
 -- Logger [1,2,4,5] 6
 instance Monad (Logger l) where
-  (=<<) ::
-    (a -> Logger l b)
-    -> Logger l a
-    -> Logger l b
-  (=<<) =
-    error "todo: Course.StateT (=<<)#instance (Logger l)"
+  (=<<) :: (a -> Logger l b) -> Logger l a -> Logger l b
+  f =<< Logger l x = let (Logger l' y) = f x in Logger (l ++ l') y
+    -- error "todo: Course.StateT (=<<)#instance (Logger l)"
 
 -- | A utility function for producing a `Logger` with one log value.
 --
 -- >>> log1 1 2
 -- Logger [1] 2
-log1 ::
-  l
-  -> a
-  -> Logger l a
-log1 =
-  error "todo: Course.StateT#log1"
+log1 :: l -> a -> Logger l a
+log1 l = Logger (l:.Nil) 
+  -- error "todo: Course.StateT#log1"
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
@@ -314,12 +299,16 @@ log1 =
 --
 -- >>> distinctG $ listh [1,2,3,2,6,106]
 -- Logger ["even number: 2","even number: 2","even number: 6","aborting > 100: 106"] Empty
-distinctG ::
-  (Integral a, Show a) =>
-  List a
-  -> Logger Chars (Optional (List a))
-distinctG =
-  error "todo: Course.StateT#distinctG"
+distinctG :: (Integral a, Show a) => List a -> Logger Chars (Optional (List a))
+distinctG xs = Logger (log xs) (distinctF xs)
+
+-- log :: (Show a) => List a -> Chars
+log Nil = Nil
+log (x :. xs) = if x > 100
+                then (listh "aborting > 100: " ++ listh (show x)) :. Nil
+                else if even x
+                     then (listh "even number: " ++ listh (show x)) :. (log xs)
+                     else log xs
 
 onFull ::
   Applicative k =>
